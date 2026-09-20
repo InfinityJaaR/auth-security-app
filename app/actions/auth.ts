@@ -18,7 +18,18 @@ type ActionState = { error?: string; success?: string };
 async function assertSameOrigin() {
   const requestHeaders = await headers();
   const origin = requestHeaders.get("origin");
-  if (origin && origin !== env.NEXT_PUBLIC_SITE_URL) {
+  if (!origin) return;
+
+  try {
+    const forwardedHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+    const forwardedProto = requestHeaders.get("x-forwarded-proto") ?? "https";
+    const requestOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : null;
+    const configuredOrigin = new URL(env.NEXT_PUBLIC_SITE_URL).origin;
+
+    if (origin !== requestOrigin && origin !== configuredOrigin) {
+      throw new Error("Solicitud no permitida.");
+    }
+  } catch {
     throw new Error("Solicitud no permitida.");
   }
 }
