@@ -60,7 +60,18 @@ export async function signUp(_state: ActionState, formData: FormData): Promise<A
       ...result.data,
       options: { emailRedirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
     });
-    if (error) return { error: "No se pudo crear la cuenta. Comprueba los datos e inténtalo de nuevo." };
+    if (error) {
+      console.error("Supabase signUp failed", { code: error.code, status: error.status });
+      const messages: Record<string, string> = {
+        user_already_exists: "No se pudo crear la cuenta. Comprueba los datos e inténtalo de nuevo.",
+        email_address_invalid: "Introduce una dirección de email válida.",
+        weak_password: "La contraseña no cumple los requisitos de seguridad.",
+        signup_disabled: "El registro está desactivado temporalmente.",
+        email_provider_disabled: "El registro por email está desactivado en Supabase.",
+        over_email_send_rate_limit: "Se alcanzó el límite de emails. Inténtalo de nuevo más tarde.",
+      };
+      return { error: messages[error.code ?? ""] ?? "No se pudo crear la cuenta. Comprueba los datos e inténtalo de nuevo." };
+    }
     return { success: "Cuenta creada. Revisa tu email para verificarla antes de iniciar sesión." };
   } catch {
     return { error: "No se pudo completar la solicitud." };
